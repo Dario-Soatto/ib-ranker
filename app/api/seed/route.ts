@@ -28,9 +28,9 @@ const initialFunds = [
   { name: 'Jefferies', website: 'https://www.jefferies.com', stage: 'elite boutique' },
   { name: 'Qatalyst Partners', website: 'https://www.qatalyst.com', stage: 'elite boutique' },
   { name: 'LionTree Advisors', website: 'https://www.liontree.com', stage: 'elite boutique' },
-{ name: 'Allen & Company', website: 'https://www.allenco.com', stage: 'elite boutique' },
-{ name: 'Raine Group', website: 'https://www.raine.com', stage: 'elite boutique' },
-{ name: 'Ardea Partners', website: 'https://www.ardeapartners.com', stage: 'elite boutique' },
+  { name: 'Allen & Company', website: 'https://alleninvestments.com', stage: 'elite boutique' },
+  { name: 'Raine Group', website: 'https://www.raine.com', stage: 'elite boutique' },
+  { name: 'Ardea Partners', website: 'https://www.ardeapartners.com', stage: 'elite boutique' },
   
   // Middle Market Banks
   { name: 'William Blair', website: 'https://www.williamblair.com', stage: 'middle market' },

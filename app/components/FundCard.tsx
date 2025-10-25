@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink } from 'lucide-react';
 import { useState } from 'react';
+import { getConfig } from '@/app/lib/config';
+
 
 interface FundCardProps {
   fund: Fund;
@@ -19,12 +21,25 @@ export default function FundCard({
   showGlow = false,
   showElo = true
 }: FundCardProps) {
+  const config = getConfig();
   const [imageError, setImageError] = useState(false);
   
-  const stageColors = {
-    'bulge bracket': 'bg-blue-100 text-blue-800 border-blue-200',
-    'elite boutique': 'bg-purple-100 text-purple-800 border-purple-200',
-    'middle market': 'bg-green-100 text-green-800 border-green-200',
+  // Get stage config for this fund's stage
+  const stageConfig = config.stages.find(s => s.value === fund.stage);
+  
+  // Default colors by type
+  const getStageColor = () => {
+    const rankerType = process.env.NEXT_PUBLIC_RANKER_TYPE || 'vc';
+    if (rankerType === 'ib') {
+      if (fund.stage === 'bulge bracket') return 'bg-blue-100 text-blue-800 border-blue-200';
+      if (fund.stage === 'elite boutique') return 'bg-purple-100 text-purple-800 border-purple-200';
+      if (fund.stage === 'middle market') return 'bg-green-100 text-green-800 border-green-200';
+    } else {
+      if (fund.stage === 'early') return 'bg-green-100 text-green-800 border-green-200';
+      if (fund.stage === 'multi') return 'bg-blue-100 text-blue-800 border-blue-200';
+      if (fund.stage === 'late') return 'bg-purple-100 text-purple-800 border-purple-200';
+    }
+    return 'bg-slate-100 text-slate-700 border-slate-200';
   };
 
   return (
@@ -61,9 +76,9 @@ export default function FundCard({
           
           {/* Stage Badge */}
           <div className="flex justify-center">
-            <Badge variant="outline" className={stageColors[fund.stage]}>
-              {fund.stage.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-            </Badge>
+          <Badge variant="outline" className={getStageColor()}>
+        {stageConfig?.label || fund.stage}
+      </Badge>
           </div>
         </div>
       </CardHeader>
