@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Trophy, ArrowRight, Loader2, SkipForward } from 'lucide-react';
 import { getConfig } from '@/app/lib/config';
+
 const config = getConfig();
 
 export default function VotingView() {
@@ -16,6 +17,21 @@ export default function VotingView() {
   const [isVoting, setIsVoting] = useState(false);
   const [hasVoted, setHasVoted] = useState(false);
   const [selectedWinnerId, setSelectedWinnerId] = useState<number | null>(null);
+  const [voteResults, setVoteResults] = useState<{
+    winner: {
+      oldElo: number;
+      newElo: number;
+      oldRank: number;
+      newRank: number;
+    };
+    loser: {
+      oldElo: number;
+      newElo: number;
+      oldRank: number;
+      newRank: number;
+    };
+    total: number;
+  } | null>(null);
 
   useEffect(() => {
     fetchFunds();
@@ -85,17 +101,6 @@ export default function VotingView() {
     return [shuffled[0], shuffled[1]];
   };
 
-  const updateCurrentPairScores = (fundsList: Fund[]) => {
-    if (!currentPair) return;
-    
-    const updatedFund1 = fundsList.find(f => f.id === currentPair[0].id);
-    const updatedFund2 = fundsList.find(f => f.id === currentPair[1].id);
-    
-    if (updatedFund1 && updatedFund2) {
-      setCurrentPair([updatedFund1, updatedFund2]);
-    }
-  };
-
   const handleVote = async (winnerId: number, loserId: number) => {
     setIsVoting(true);
     setSelectedWinnerId(winnerId);
@@ -110,55 +115,44 @@ export default function VotingView() {
       if (response.ok) {
         const data = await response.json();
         
+        // Store vote results
+        setVoteResults(data);
+        
         // Optimistically update just the two funds in our state
         if (currentPair) {
           const updatedPair: [Fund, Fund] = [
             {
               ...currentPair[0],
               elo_score: currentPair[0].id === winnerId 
-                ? data.newRatings.winner 
-                : data.newRatings.loser,
+                ? data.winner.newElo 
+                : data.loser.newElo,
               match_count: currentPair[0].match_count + 1,
             },
             {
               ...currentPair[1],
               elo_score: currentPair[1].id === winnerId 
-                ? data.newRatings.winner 
-                : data.newRatings.loser,
+                ? data.winner.newElo 
+                : data.loser.newElo,
               match_count: currentPair[1].match_count + 1,
             },
           ];
           
           setCurrentPair(updatedPair);
-          
-          // Also update the funds array for when we get the next pair
-          setFunds(prevFunds => 
-            prevFunds.map(fund => {
-              if (fund.id === winnerId) {
-                return { ...fund, elo_score: data.newRatings.winner, match_count: fund.match_count + 1 };
-              }
-              if (fund.id === loserId) {
-                return { ...fund, elo_score: data.newRatings.loser, match_count: fund.match_count + 1 };
-              }
-              return fund;
-            })
-          );
+          setHasVoted(true);
         }
-        
-        setHasVoted(true);
       }
     } catch (error) {
-      console.error('Failed to submit vote:', error);
+      console.error('Voting error:', error);
     } finally {
       setIsVoting(false);
     }
   };
 
   const handleNext = () => {
-    const newPair = getRandomPair(funds);
-    setCurrentPair(newPair);
     setHasVoted(false);
     setSelectedWinnerId(null);
+    setVoteResults(null);
+    setCurrentPair(getRandomPair(funds));
   };
 
   if (isLoading) {
@@ -218,6 +212,10 @@ export default function VotingView() {
               isClickable={!isVoting && !hasVoted}
               showGlow={hasVoted && selectedWinnerId === currentPair[0].id}
               showElo={hasVoted}
+              voteData={hasVoted && voteResults ? {
+                ...(currentPair[0].id === selectedWinnerId ? voteResults.winner : voteResults.loser),
+                total: voteResults.total
+              } : null}
             />
           </div>
 
@@ -240,6 +238,10 @@ export default function VotingView() {
               isClickable={!isVoting && !hasVoted}
               showGlow={hasVoted && selectedWinnerId === currentPair[1].id}
               showElo={hasVoted}
+              voteData={hasVoted && voteResults ? {
+                ...(currentPair[1].id === selectedWinnerId ? voteResults.winner : voteResults.loser),
+                total: voteResults.total
+              } : null}
             />
           </div>
         </div>

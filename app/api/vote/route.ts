@@ -21,10 +21,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Fund not found' }, { status: 404 });
     }
 
+    const oldWinnerRating = winner.rows[0].elo_score;
+    const oldLoserRating = loser.rows[0].elo_score;
+
+    // Calculate OLD rankings (before update)
+    const oldWinnerRankResult = await sql`
+      SELECT COUNT(*) + 1 as rank
+      FROM funds
+      WHERE elo_score > ${oldWinnerRating}
+    `;
+    
+    const oldLoserRankResult = await sql`
+      SELECT COUNT(*) + 1 as rank
+      FROM funds
+      WHERE elo_score > ${oldLoserRating}
+    `;
+
     // Calculate new ELO scores
     const { newWinnerRating, newLoserRating } = calculateElo(
-      winner.rows[0].elo_score,
-      loser.rows[0].elo_score
+      oldWinnerRating,
+      oldLoserRating
     );
 
     // Update both funds
@@ -40,12 +56,36 @@ export async function POST(request: Request) {
       WHERE id = ${loserId}
     `;
 
+    // Calculate NEW rankings (after update)
+    const newWinnerRankResult = await sql`
+      SELECT COUNT(*) + 1 as rank
+      FROM funds
+      WHERE elo_score > ${newWinnerRating}
+    `;
+    
+    const newLoserRankResult = await sql`
+      SELECT COUNT(*) + 1 as rank
+      FROM funds
+      WHERE elo_score > ${newLoserRating}
+    `;
+
+    const totalFunds = await sql`SELECT COUNT(*) as total FROM funds`;
+
     return NextResponse.json({
       success: true,
-      newRatings: {
-        winner: newWinnerRating,
-        loser: newLoserRating,
+      winner: {
+        oldElo: oldWinnerRating,
+        newElo: newWinnerRating,
+        oldRank: parseInt(oldWinnerRankResult.rows[0].rank),
+        newRank: parseInt(newWinnerRankResult.rows[0].rank),
       },
+      loser: {
+        oldElo: oldLoserRating,
+        newElo: newLoserRating,
+        oldRank: parseInt(oldLoserRankResult.rows[0].rank),
+        newRank: parseInt(newLoserRankResult.rows[0].rank),
+      },
+      total: parseInt(totalFunds.rows[0].total),
     });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to update ratings' }, { status: 500 });

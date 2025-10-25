@@ -12,6 +12,13 @@ interface FundCardProps {
   isClickable?: boolean;
   showGlow?: boolean;
   showElo?: boolean;
+  voteData?: {
+    oldElo: number;
+    newElo: number;
+    oldRank: number;
+    newRank: number;
+    total: number;
+  } | null;
 }
 
 export default function FundCard({ 
@@ -19,7 +26,8 @@ export default function FundCard({
   onClick, 
   isClickable = true,
   showGlow = false,
-  showElo = true
+  showElo = true,
+  voteData = null
 }: FundCardProps) {
   const config = getConfig();
   const [imageError, setImageError] = useState(false);
@@ -76,22 +84,84 @@ export default function FundCard({
           
           {/* Stage Badge */}
           <div className="flex justify-center">
-          <Badge variant="outline" className={getStageColor()}>
-        {stageConfig?.label || fund.stage}
-      </Badge>
+            <Badge variant="outline" className={getStageColor()}>
+              {stageConfig?.label || fund.stage}
+            </Badge>
           </div>
         </div>
       </CardHeader>
 
       <CardContent className="text-center space-y-3">
-        {/* ELO Score */}
+        {/* ELO Score and Ranking */}
         {showElo ? (
-          <div className="py-2">
-            <p className="text-sm text-slate-500 mb-1">ELO Rating</p>
-            <p className="text-4xl font-bold text-slate-900">
-              {fund.elo_score}
-            </p>
-          </div>
+          voteData ? (
+            // After voting - show old and new
+            <div className="py-2 space-y-3">
+              {/* Ranking */}
+              <div className="border-b border-slate-200 pb-3">
+                <p className="text-xs text-slate-500 mb-2">Ranking</p>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-2xl font-bold text-slate-400 line-through">
+                    #{voteData.oldRank}
+                  </span>
+                  <span className="text-slate-400">→</span>
+                  <span className={`text-3xl font-bold ${
+                    voteData.newRank < voteData.oldRank 
+                      ? 'text-green-600' 
+                      : voteData.newRank > voteData.oldRank
+                      ? 'text-red-600'
+                      : 'text-slate-900'
+                  }`}>
+                    #{voteData.newRank}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-1">
+                  out of {voteData.total}
+                </p>
+              </div>
+              
+              {/* ELO Score */}
+              <div>
+                <p className="text-xs text-slate-500 mb-2">ELO Rating</p>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-xl font-semibold text-slate-400 line-through">
+                    {voteData.oldElo}
+                  </span>
+                  <span className="text-slate-400">→</span>
+                  <span className={`text-2xl font-bold ${
+                    voteData.newElo > voteData.oldElo 
+                      ? 'text-green-600' 
+                      : voteData.newElo < voteData.oldElo
+                      ? 'text-red-600'
+                      : 'text-slate-900'
+                  }`}>
+                    {voteData.newElo}
+                  </span>
+                </div>
+                <p className={`text-xs font-medium mt-1 ${
+                  voteData.newElo > voteData.oldElo 
+                    ? 'text-green-600' 
+                    : voteData.newElo < voteData.oldElo
+                    ? 'text-red-600'
+                    : 'text-slate-500'
+                }`}>
+                  {voteData.newElo > voteData.oldElo 
+                    ? `+${voteData.newElo - voteData.oldElo}` 
+                    : voteData.newElo < voteData.oldElo
+                    ? `${voteData.newElo - voteData.oldElo}`
+                    : 'No change'}
+                </p>
+              </div>
+            </div>
+          ) : (
+            // Before voting - show current
+            <div className="py-2">
+              <p className="text-sm text-slate-500 mb-1">ELO Rating</p>
+              <p className="text-4xl font-bold text-slate-900">
+                {fund.elo_score}
+              </p>
+            </div>
+          )
         ) : (
           <div className="h-20 flex items-center justify-center">
             <p className="text-sm text-slate-400">Vote to reveal rating</p>
