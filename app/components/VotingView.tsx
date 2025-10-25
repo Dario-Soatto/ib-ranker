@@ -181,12 +181,12 @@ export default function VotingView() {
         {/* Header */}
         <div className="text-center mb-12 space-y-4">
           <h1 className="text-5xl font-bold text-slate-900">
-            VC Fund Ranker
+            IB Firm Ranker
           </h1>
           <p className="text-lg text-slate-600">
             {hasVoted 
               ? 'Rankings updated! Click Next for another matchup.' 
-              : 'Which VC fund is better? Click to vote.'}
+              : 'Which investment bank is better? Click to vote.'}
           </p>
           
           {/* Keyboard shortcut hints */}
