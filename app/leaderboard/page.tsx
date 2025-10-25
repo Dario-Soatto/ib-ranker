@@ -4,10 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Trophy, Medal, Award } from 'lucide-react';
+import { getConfig } from '@/app/lib/config';
 
 export const dynamic = 'force-dynamic';
 
 export default async function LeaderboardPage() {
+  const config = getConfig();
+  
   const { rows: funds } = await sql`
     SELECT * FROM funds
     ORDER BY elo_score DESC
@@ -18,6 +21,27 @@ export default async function LeaderboardPage() {
     if (index === 1) return <Medal className="w-5 h-5 text-slate-400" />;
     if (index === 2) return <Award className="w-5 h-5 text-amber-700" />;
     return null;
+  };
+
+  // Get stage label from config
+  const getStageLabel = (stageValue: string) => {
+    const stageConfig = config.stages.find(s => s.value === stageValue);
+    return stageConfig?.label || stageValue;
+  };
+
+  // Get stage colors (matching FundCard)
+  const getStageColor = (stageValue: string) => {
+    const rankerType = process.env.NEXT_PUBLIC_RANKER_TYPE || 'vc';
+    if (rankerType === 'ib') {
+      if (stageValue === 'bulge bracket') return 'bg-blue-100 text-blue-800 border-blue-200';
+      if (stageValue === 'elite boutique') return 'bg-purple-100 text-purple-800 border-purple-200';
+      if (stageValue === 'middle market') return 'bg-green-100 text-green-800 border-green-200';
+    } else {
+      if (stageValue === 'early') return 'bg-green-100 text-green-800 border-green-200';
+      if (stageValue === 'multi') return 'bg-blue-100 text-blue-800 border-blue-200';
+      if (stageValue === 'late') return 'bg-purple-100 text-purple-800 border-purple-200';
+    }
+    return 'bg-slate-50 text-slate-600 border-slate-200';
   };
 
   return (
