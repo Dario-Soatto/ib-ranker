@@ -106,9 +106,9 @@ export default async function LeaderboardPage() {
                         {fund.name}
                     </a>
                     <div className="flex flex-wrap gap-2 mt-1 items-center">
-                        <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200 text-xs">
-                        {fund.stage.charAt(0).toUpperCase() + fund.stage.slice(1)}
-                        </Badge>
+                    <Badge variant="outline" className={`${getStageColor(fund.stage)} text-xs`}>
+                      {getStageLabel(fund.stage)}
+                    </Badge>    
                         <span className="text-xs text-slate-500">
                         {fund.match_count} {fund.match_count === 1 ? 'match' : 'matches'}
                         </span>
