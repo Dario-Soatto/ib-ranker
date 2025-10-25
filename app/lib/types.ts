@@ -1,10 +1,15 @@
-export type Stage = 'bulge bracket' | 'elite boutique' | 'middle market';
+import { getConfig } from './config';
+
+const config = getConfig();
+
+// Dynamic stage type based on config
+export type Stage = typeof config.stages[number]['value'];
 
 export interface Fund {
   id: number;
   name: string;
   website: string;
-  stage: Stage;
+  stage: string; // Keep as string for flexibility
   logo_url: string | null;
   elo_score: number;
   match_count: number;

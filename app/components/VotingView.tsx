@@ -6,6 +6,8 @@ import FundCard from './FundCard';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Trophy, ArrowRight, Loader2, SkipForward } from 'lucide-react';
+import { getConfig } from '@/app/lib/config';
+const config = getConfig();
 
 export default function VotingView() {
   const [funds, setFunds] = useState<Fund[]>([]);
@@ -181,12 +183,12 @@ export default function VotingView() {
         {/* Header */}
         <div className="text-center mb-12 space-y-4">
           <h1 className="text-5xl font-bold text-slate-900">
-            IB Firm Ranker
+            {config.title}
           </h1>
           <p className="text-lg text-slate-600">
             {hasVoted 
               ? 'Rankings updated! Click Next for another matchup.' 
-              : 'Which investment bank is better? Click to vote.'}
+              : `Which ${config.entityName} is better? Click to vote.`}
           </p>
           
           {/* Keyboard shortcut hints */}
