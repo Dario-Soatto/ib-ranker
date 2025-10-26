@@ -42,6 +42,10 @@ export default function FundCard({
       if (fund.stage === 'bulge bracket') return 'bg-blue-100 text-blue-800 border-blue-200';
       if (fund.stage === 'elite boutique') return 'bg-purple-100 text-purple-800 border-purple-200';
       if (fund.stage === 'middle market') return 'bg-green-100 text-green-800 border-green-200';
+    } else if (rankerType === 'hf') {
+      if (fund.stage === 'multi-strategy') return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+      if (fund.stage === 'long-short equity') return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      if (fund.stage === 'quantitative') return 'bg-cyan-100 text-cyan-800 border-cyan-200';
     } else {
       if (fund.stage === 'early') return 'bg-green-100 text-green-800 border-green-200';
       if (fund.stage === 'multi') return 'bg-blue-100 text-blue-800 border-blue-200';

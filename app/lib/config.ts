@@ -1,9 +1,9 @@
-export type RankerType = 'vc' | 'ib';
+export type RankerType = 'vc' | 'ib' | 'hf'; // Add 'hf'
 
 export interface RankerConfig {
   title: string;
-  entityName: string; // "fund" or "investment bank"
-  entityNamePlural: string; // "funds" or "investment banks"
+  entityName: string;
+  entityNamePlural: string;
   stages: {
     value: string;
     label: string;
@@ -31,9 +31,18 @@ const CONFIGS: Record<RankerType, RankerConfig> = {
       { value: 'middle market', label: 'Middle Market' },
     ],
   },
+  hf: {
+    title: 'Hedge Fund Ranker',
+    entityName: 'hedge fund',
+    entityNamePlural: 'hedge funds',
+    stages: [
+      { value: 'multi-strategy', label: 'Multi-Strategy' },
+      { value: 'long-short equity', label: 'Long/Short Equity' },
+      { value: 'quantitative', label: 'Quantitative' },
+    ],
+  },
 };
 
-// Get config based on environment variable
 export function getConfig(): RankerConfig {
   const type = (process.env.NEXT_PUBLIC_RANKER_TYPE || 'vc') as RankerType;
   return CONFIGS[type];
