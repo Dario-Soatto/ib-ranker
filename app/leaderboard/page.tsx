@@ -60,8 +60,20 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen bg-gray-50 py-12 px-4 relative">
       <div className="max-w-4xl mx-auto">
+        {/* Back to Voting Button - Top Left */}
+        <div className="absolute top-4 left-4">
+          <Button asChild variant="outline" size="sm" className="gap-2">
+            <Link href="/">
+              <ArrowLeft className="w-4 h-4" />
+              Back to Voting
+            </Link>
+          </Button>
+        </div>
+        
+
+
         {/* Header */}
         <div className="text-center mb-12 space-y-4">
           <h1 className="text-5xl font-bold text-slate-900">
@@ -73,12 +85,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
               : 'Rankings based on community votes'}
           </p>
           
-          <Button asChild variant="outline" size="lg" className="gap-2">
-            <Link href="/">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Voting
-            </Link>
-          </Button>
+          
         </div>
 
         {/* Stage Filter */}

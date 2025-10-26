@@ -19,6 +19,7 @@ export default function VotingView() {
   const [isVoting, setIsVoting] = useState(false);
   const [hasVoted, setHasVoted] = useState(false);
   const [selectedWinnerId, setSelectedWinnerId] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [voteResults, setVoteResults] = useState<{
     winner: {
       oldElo: number;
@@ -113,6 +114,7 @@ export default function VotingView() {
   const handleVote = async (winnerId: number, loserId: number) => {
     setIsVoting(true);
     setSelectedWinnerId(winnerId);
+    setErrorMessage(null); // Clear any previous errors
   
     try {
       const response = await fetch('/api/vote', {
@@ -146,18 +148,25 @@ export default function VotingView() {
           setCurrentPair(updatedPair);
           setHasVoted(true);
         }
+      } else {
+        // Handle error responses (including rate limit)
+        const errorData = await response.json();
+        setErrorMessage(errorData.error || 'Failed to submit vote. Please try again.');
       }
     } catch (error) {
       console.error('Voting error:', error);
+      setErrorMessage('Network error. Please check your connection and try again.');
     } finally {
       setIsVoting(false);
     }
   };
 
+  
   const handleNext = () => {
     setHasVoted(false);
     setSelectedWinnerId(null);
     setVoteResults(null);
+    setErrorMessage(null); // Clear error when moving to next matchup
     setCurrentPair(getRandomPair(filteredFunds));
   };
 
@@ -195,52 +204,55 @@ export default function VotingView() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12 space-y-4">
-          <h1 className="text-5xl font-bold text-slate-900">
-            {config.title}
-          </h1>
-          <p className="text-lg text-slate-600">
-            {hasVoted 
-              ? 'Rankings updated! Click Next for another matchup.' 
-              : `Which ${config.entityName} is better? Click to vote.`}
-          </p>
-          
-          {/* Keyboard shortcut hints */}
-          <div className="text-sm text-slate-500">
-            Use ← → arrow keys to vote, Space/Enter to {hasVoted ? 'continue' : 'skip'}
-          </div>
+<div className="min-h-screen bg-gray-50 py-12 px-4">
+<div className="max-w-7xl mx-auto">
+  {/* Leaderboard Button - Top Right */}
+  <div className="absolute top-4 right-4">
+    <Button asChild variant="outline" size="sm" className="gap-2">
+      <Link href="/leaderboard">
+        <Trophy className="w-4 h-4" />
+        View Leaderboard
+      </Link>
+    </Button>
+  </div>
 
-          {/* Stage Filter */}
-          <div className="flex flex-wrap gap-2 justify-center">
-            <Button 
-              onClick={() => setSelectedStage(null)}
-              variant={!selectedStage ? "default" : "outline"}
-              size="sm"
-            >
-              All
-            </Button>
-            {config.stages.map((stage) => (
-            <Button
-              key={stage.value}
-              onClick={() => setSelectedStage(stage.value)}
-              variant={selectedStage === stage.value ? "default" : "outline"}
-              size="sm"
-            >
-              {stage.label}
-            </Button>
-          ))}
-          </div>
-          
-          <Button asChild variant="outline" size="lg" className="gap-2">
-            <Link href="/leaderboard">
-              <Trophy className="w-4 h-4" />
-              View Leaderboard
-            </Link>
-          </Button>
-        </div>
+  {/* Header */}
+  <div className="text-center mb-12 space-y-4">
+    <h1 className="text-5xl font-bold text-slate-900">
+      {config.title}
+    </h1>
+    <p className="text-lg text-slate-600">
+      {hasVoted 
+        ? 'Rankings updated! Click Next for another matchup.' 
+        : `Which ${config.entityName} is better? Click to vote.`}
+    </p>
+    
+    {/* Keyboard shortcut hints */}
+    <div className="text-sm text-slate-500">
+      Use ← → arrow keys to vote, Space/Enter to {hasVoted ? 'continue' : 'skip'}
+    </div>
+
+    {/* Stage Filter */}
+    <div className="flex flex-wrap gap-2 justify-center pt-2">
+      <Button 
+        onClick={() => setSelectedStage(null)}
+        variant={!selectedStage ? "default" : "outline"}
+        size="sm"
+      >
+        All
+      </Button>
+      {config.stages.map((stage) => (
+      <Button
+        key={stage.value}
+        onClick={() => setSelectedStage(stage.value)}
+        variant={selectedStage === stage.value ? "default" : "outline"}
+        size="sm"
+      >
+        {stage.label}
+      </Button>
+    ))}
+    </div>
+  </div>
 
         {/* Two Cards Side by Side */}
         <div className="flex flex-col lg:flex-row gap-8 justify-center items-center mb-8">
@@ -289,6 +301,18 @@ export default function VotingView() {
             />
           </div>
         </div>
+
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="max-w-2xl mx-auto mb-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+              <p className="text-red-800 font-medium">{errorMessage}</p>
+              <p className="text-red-600 text-sm mt-1">
+                Please wait a moment before voting again.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Status and Skip/Next Button */}
         <div className="text-center mt-8">
