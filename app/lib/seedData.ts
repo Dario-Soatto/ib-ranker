@@ -208,7 +208,7 @@ export interface SeedFund {
     { name: 'Blue Harbour Group', website: 'http://www.bhgrp.com', stage: 'long-short equity' },
     { name: 'Archegos Capital Management', website: 'https://www.archegos.com', stage: 'long-short equity' },
     { name: 'BlackRock Alternative Investors', website: 'https://www.blackrock.com', stage: 'long-short equity' },
-    { name: 'Foxhaven Asset Management', website: 'https://www.foxhavenasset.com', stage: 'long-short equity' },
+    { name: 'Foxhaven Asset Management', website: 'https://www.foxhavencap.com', stage: 'long-short equity' },
     // Quantitative
     { name: 'Renaissance Technologies', website: 'https://www.rentec.com', stage: 'quantitative' },
     { name: 'Two Sigma', website: 'https://www.twosigma.com', stage: 'quantitative' },
