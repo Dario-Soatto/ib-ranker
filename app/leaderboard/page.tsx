@@ -8,13 +8,26 @@ import { getConfig } from '@/app/lib/config';
 
 export const dynamic = 'force-dynamic';
 
-export default async function LeaderboardPage() {
+interface PageProps {
+  searchParams: { stage?: string };
+}
+
+export default async function LeaderboardPage({ searchParams }: PageProps) {
   const config = getConfig();
-  
-  const { rows: funds } = await sql`
-    SELECT * FROM funds
-    ORDER BY elo_score DESC
-  `;
+  const params = await searchParams;
+  const selectedStage = params.stage;
+
+  // Build SQL query with optional stage filter
+  const { rows: funds } = selectedStage
+    ? await sql`
+        SELECT * FROM funds
+        WHERE stage = ${selectedStage}
+        ORDER BY elo_score DESC
+      `
+    : await sql`
+        SELECT * FROM funds
+        ORDER BY elo_score DESC
+      `;
 
   const getRankIcon = (index: number) => {
     if (index === 0) return <Trophy className="w-5 h-5 text-amber-500" />;
@@ -23,13 +36,11 @@ export default async function LeaderboardPage() {
     return null;
   };
 
-  // Get stage label from config
   const getStageLabel = (stageValue: string) => {
     const stageConfig = config.stages.find(s => s.value === stageValue);
     return stageConfig?.label || stageValue;
   };
 
-  // Get stage colors (matching FundCard)
   const getStageColor = (stageValue: string) => {
     const rankerType = process.env.NEXT_PUBLIC_RANKER_TYPE || 'vc';
     if (rankerType === 'ib') {
@@ -57,7 +68,9 @@ export default async function LeaderboardPage() {
             Leaderboard
           </h1>
           <p className="text-lg text-slate-600">
-            Rankings based on community votes
+            {selectedStage 
+              ? `${getStageLabel(selectedStage)} Rankings` 
+              : 'Rankings based on community votes'}
           </p>
           
           <Button asChild variant="outline" size="lg" className="gap-2">
@@ -68,73 +81,106 @@ export default async function LeaderboardPage() {
           </Button>
         </div>
 
+        {/* Stage Filter */}
+        <div className="mb-6 flex flex-wrap gap-2 justify-center">
+          <Button 
+            asChild
+            variant={!selectedStage ? "default" : "outline"}
+            size="sm"
+          >
+            <Link href="/leaderboard">All</Link>
+          </Button>
+          {config.stages.map((stage) => (
+            <Button
+              key={stage.value}
+              asChild
+              variant={selectedStage === stage.value ? "default" : "outline"}
+              size="sm"
+            >
+              <Link href={`/leaderboard?stage=${stage.value}`}>
+                {stage.label}
+              </Link>
+            </Button>
+          ))}
+        </div>
+
         {/* Leaderboard */}
         <Card>
           <CardContent className="p-6">
-            <div className="space-y-2">
-              {funds.map((fund, index) => (
-                <div
-                  key={fund.id}
-                  className="flex items-center gap-4 p-4 rounded-lg border border-gray-200 bg-white"
-                >
-                  {/* Rank */}
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-50 border border-slate-200 flex-shrink-0">
-                    {getRankIcon(index) || (
-                      <span className="font-semibold text-slate-700">{index + 1}</span>
-                    )}
-                  </div>
-
-                  {/* Logo - simplified without onError */}
-                  {fund.logo_url ? (
-                    <img
-                      src={fund.logo_url}
-                      alt={`${fund.name} logo`}
-                      className="w-10 h-10 object-contain border border-slate-200 flex-shrink-0 rounded"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 flex-shrink-0">
-                      <span className="font-semibold text-slate-700 text-sm">
-                        {fund.name.charAt(0)}
-                      </span>
+            {funds.length === 0 ? (
+              <div className="text-center py-12 text-slate-500">
+                No {selectedStage ? getStageLabel(selectedStage) : ''} funds found
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {funds.map((fund, index) => (
+                  <div
+                    key={fund.id}
+                    className="flex items-center gap-4 p-4 rounded-lg border border-gray-200 bg-white"
+                  >
+                    {/* Rank */}
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-50 border border-slate-200 flex-shrink-0">
+                      {getRankIcon(index) || (
+                        <span className="font-semibold text-slate-700">{index + 1}</span>
+                      )}
                     </div>
-                  )}
 
-                  {/* Fund Info */}
+                    {/* Logo */}
+                    {fund.logo_url ? (
+                      <img
+                        src={fund.logo_url}
+                        alt={`${fund.name} logo`}
+                        className="w-10 h-10 object-contain border border-slate-200 flex-shrink-0 rounded"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 flex-shrink-0">
+                        <span className="font-semibold text-slate-700 text-sm">
+                          {fund.name.charAt(0)}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Fund Info */}
                     <div className="flex-1 min-w-0">
-                    <a 
+                      <a 
                         href={fund.website}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="font-semibold text-slate-900 hover:text-blue-600 truncate block transition-colors"
-                    >
+                      >
                         {fund.name}
-                    </a>
-                    <div className="flex flex-wrap gap-2 mt-1 items-center">
-                    <Badge variant="outline" className={`${getStageColor(fund.stage)} text-xs`}>
-                      {getStageLabel(fund.stage)}
-                    </Badge>    
+                      </a>
+                      <div className="flex flex-wrap gap-2 mt-1 items-center">
+                        <Badge variant="outline" className={`${getStageColor(fund.stage)} text-xs`}>
+                          {getStageLabel(fund.stage)}
+                        </Badge>
                         <span className="text-xs text-slate-500">
-                        {fund.match_count} {fund.match_count === 1 ? 'match' : 'matches'}
+                          {fund.match_count} {fund.match_count === 1 ? 'match' : 'matches'}
                         </span>
-                    </div>
+                      </div>
                     </div>
 
-                  {/* ELO Score */}
-                  <div className="text-right flex-shrink-0">
-                    <div className="text-2xl font-bold text-slate-900">
-                      {fund.elo_score}
+                    {/* ELO Score */}
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-2xl font-bold text-slate-900">
+                        {fund.elo_score}
+                      </div>
+                      <div className="text-xs text-slate-500">ELO</div>
                     </div>
-                    <div className="text-xs text-slate-500">ELO</div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
         {/* Stats Footer */}
         <div className="mt-8 text-center text-slate-600 space-y-1">
-          <p className="font-medium">Total Funds: {funds.length}</p>
+          <p className="font-medium">
+            {selectedStage 
+              ? `${getStageLabel(selectedStage)}: ${funds.length} ${funds.length === 1 ? 'fund' : 'funds'}`
+              : `Total Funds: ${funds.length}`}
+          </p>
           <p className="text-sm text-slate-500">
             Keep voting to refine the rankings
           </p>

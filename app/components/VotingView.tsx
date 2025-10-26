@@ -11,7 +11,9 @@ import { getConfig } from '@/app/lib/config';
 const config = getConfig();
 
 export default function VotingView() {
-  const [funds, setFunds] = useState<Fund[]>([]);
+  const [allFunds, setAllFunds] = useState<Fund[]>([]);
+  const [filteredFunds, setFilteredFunds] = useState<Fund[]>([]);
+  const [selectedStage, setSelectedStage] = useState<string | null>(null);
   const [currentPair, setCurrentPair] = useState<[Fund, Fund] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isVoting, setIsVoting] = useState(false);
@@ -37,15 +39,25 @@ export default function VotingView() {
     fetchFunds();
   }, []);
 
+  // Update filtered funds when stage filter changes
+  useEffect(() => {
+    if (selectedStage) {
+      const filtered = allFunds.filter(f => f.stage === selectedStage);
+      setFilteredFunds(filtered);
+      setCurrentPair(getRandomPair(filtered));
+    } else {
+      setFilteredFunds(allFunds);
+      setCurrentPair(getRandomPair(allFunds));
+    }
+  }, [selectedStage, allFunds]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      // Don't handle keyboard shortcuts if we're voting or no pair is loaded
       if (isVoting || !currentPair) return;
 
       switch (e.key) {
         case 'ArrowLeft':
-          // Vote for left card (only if not already voted)
           if (!hasVoted) {
             e.preventDefault();
             handleVote(currentPair[0].id, currentPair[1].id);
@@ -53,7 +65,6 @@ export default function VotingView() {
           break;
         
         case 'ArrowRight':
-          // Vote for right card (only if not already voted)
           if (!hasVoted) {
             e.preventDefault();
             handleVote(currentPair[1].id, currentPair[0].id);
@@ -63,7 +74,6 @@ export default function VotingView() {
         case ' ':
         case 'Enter':
         case 'Tab':
-          // Skip or Next
           e.preventDefault();
           handleNext();
           break;
@@ -71,18 +81,17 @@ export default function VotingView() {
     };
 
     window.addEventListener('keydown', handleKeyPress);
-    
-    // Cleanup
     return () => {
       window.removeEventListener('keydown', handleKeyPress);
     };
-  }, [isVoting, hasVoted, currentPair]); // Re-run when these change
+  }, [isVoting, hasVoted, currentPair]);
 
   const fetchFunds = async () => {
     try {
       const response = await fetch('/api/funds');
       const data = await response.json();
-      setFunds(data);
+      setAllFunds(data);
+      setFilteredFunds(data);
       
       if (!currentPair) {
         setCurrentPair(getRandomPair(data));
@@ -114,11 +123,8 @@ export default function VotingView() {
   
       if (response.ok) {
         const data = await response.json();
-        
-        // Store vote results
         setVoteResults(data);
         
-        // Optimistically update just the two funds in our state
         if (currentPair) {
           const updatedPair: [Fund, Fund] = [
             {
@@ -152,7 +158,7 @@ export default function VotingView() {
     setHasVoted(false);
     setSelectedWinnerId(null);
     setVoteResults(null);
-    setCurrentPair(getRandomPair(funds));
+    setCurrentPair(getRandomPair(filteredFunds));
   };
 
   if (isLoading) {
@@ -163,10 +169,27 @@ export default function VotingView() {
     );
   }
 
+  if (filteredFunds.length < 2) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center space-y-4">
+          <p className="text-xl text-muted-foreground">
+            Not enough {selectedStage ? config.stages.find(s => s.value === selectedStage)?.label : ''} funds to compare
+          </p>
+          {selectedStage && (
+            <Button onClick={() => setSelectedStage(null)}>
+              Clear Filter
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (!currentPair) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <p className="text-xl text-muted-foreground">Not enough funds to compare</p>
+        <p className="text-xl text-muted-foreground">Loading matchup...</p>
       </div>
     );
   }
@@ -188,6 +211,27 @@ export default function VotingView() {
           {/* Keyboard shortcut hints */}
           <div className="text-sm text-slate-500">
             Use ← → arrow keys to vote, Space/Enter to {hasVoted ? 'continue' : 'skip'}
+          </div>
+
+          {/* Stage Filter */}
+          <div className="flex flex-wrap gap-2 justify-center">
+            <Button 
+              onClick={() => setSelectedStage(null)}
+              variant={!selectedStage ? "default" : "outline"}
+              size="sm"
+            >
+              All
+            </Button>
+            {config.stages.map((stage) => (
+            <Button
+              key={stage.value}
+              onClick={() => setSelectedStage(stage.value)}
+              variant={selectedStage === stage.value ? "default" : "outline"}
+              size="sm"
+            >
+              {stage.label}
+            </Button>
+          ))}
           </div>
           
           <Button asChild variant="outline" size="lg" className="gap-2">

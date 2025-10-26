@@ -28,7 +28,7 @@ export interface SeedFund {
   { name: 'Bessemer Venture Partners', website: 'https://www.bvp.com', stage: 'multi' },
   { name: 'Charles River Ventures', website: 'https://www.crv.com', stage: 'early' },
   { name: '8VC', website: 'https://www.8vc.com', stage: 'multi' },
-  { name: 'Lux Capital', website: 'https://www.luxcapital.com', stage: 'early' },
+  { name: 'Lux Capital', website: 'https://www.luxcapital.com', stage: 'multi' },
   { name: 'Battery Ventures', website: 'https://www.battery.com', stage: 'multi' },
   { name: 'Redpoint Ventures', website: 'https://www.redpoint.com', stage: 'multi' },
   { name: 'First Round Capital', website: 'https://firstround.com', stage: 'early' },
