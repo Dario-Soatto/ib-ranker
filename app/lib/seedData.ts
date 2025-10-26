@@ -80,6 +80,7 @@ export interface SeedFund {
   { name: 'Obvious Ventures', website: 'https://obvious.com', stage: 'early' },
   { name: 'Abstract Ventures', website: 'https://www.abstractvc.com/', stage: 'early' },
   { name: 'Susa Ventures', website: 'https://www.susaventures.com/', stage: 'early' },
+  { name: 'Neo', website: 'https://neo.com', stage: 'early' },
   ];
   
   // Investment Banks
