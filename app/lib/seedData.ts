@@ -250,5 +250,7 @@ export interface SeedFund {
   // Helper function to get seed data based on ranker type
   export function getSeedData(): SeedFund[] {
     const rankerType = process.env.NEXT_PUBLIC_RANKER_TYPE || 'vc';
-    return rankerType === 'ib' ? ibFunds : vcFunds;
+    if (rankerType === 'hf') return hfFunds;
+    if (rankerType === 'ib') return ibFunds;
+    return vcFunds;
   }
