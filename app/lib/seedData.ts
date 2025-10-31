@@ -92,7 +92,6 @@ export interface SeedFund {
   { name: 'Bank of America', website: 'https://www.bankofamerica.com', stage: 'bulge bracket' },
   { name: 'Citigroup', website: 'https://www.citigroup.com', stage: 'bulge bracket' },
   { name: 'Barclays', website: 'https://www.barclays.com', stage: 'bulge bracket' },
-  { name: 'Credit Suisse', website: 'https://www.credit-suisse.com', stage: 'bulge bracket' },
   { name: 'Deutsche Bank', website: 'https://www.db.com', stage: 'bulge bracket' },
   { name: 'UBS', website: 'https://www.ubs.com', stage: 'bulge bracket' },
   { name: 'HSBC', website: 'https://www.hsbc.com', stage: 'bulge bracket' },

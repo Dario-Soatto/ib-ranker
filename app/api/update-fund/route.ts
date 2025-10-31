@@ -4,7 +4,7 @@ import { generateLogoUrl } from '@/app/lib/brandfetch';
 
 export async function POST(request: Request) {
   try {
-    const { fundName, newWebsite, secret } = await request.json();
+    const { fundName, newWebsite, logo_url, secret } = await request.json();
 
     // Check authentication
     if (secret !== process.env.ADMIN_SECRET) {
@@ -14,21 +14,50 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!fundName || !newWebsite) {
+    if (!fundName) {
       return NextResponse.json(
-        { error: 'fundName and newWebsite are required' },
+        { error: 'fundName is required' },
         { status: 400 }
       );
     }
 
-    const newLogoUrl = generateLogoUrl(newWebsite);
+    // Build update query dynamically based on what's provided
+    let updateQuery;
+    
+    if (newWebsite !== undefined && logo_url !== undefined) {
+      // Both website and logo_url provided
+      const logoUrl = logo_url === null ? null : logo_url;
+      updateQuery = sql`
+        UPDATE funds 
+        SET website = ${newWebsite}, logo_url = ${logoUrl}
+        WHERE name = ${fundName}
+        RETURNING *
+      `;
+    } else if (newWebsite !== undefined) {
+      // Only website provided - generate new logo
+      const newLogoUrl = generateLogoUrl(newWebsite);
+      updateQuery = sql`
+        UPDATE funds 
+        SET website = ${newWebsite}, logo_url = ${newLogoUrl}
+        WHERE name = ${fundName}
+        RETURNING *
+      `;
+    } else if (logo_url !== undefined) {
+      // Only logo_url provided (can be null)
+      updateQuery = sql`
+        UPDATE funds 
+        SET logo_url = ${logo_url}
+        WHERE name = ${fundName}
+        RETURNING *
+      `;
+    } else {
+      return NextResponse.json(
+        { error: 'Either newWebsite or logo_url must be provided' },
+        { status: 400 }
+      );
+    }
 
-    const result = await sql`
-      UPDATE funds 
-      SET website = ${newWebsite}, logo_url = ${newLogoUrl}
-      WHERE name = ${fundName}
-      RETURNING *
-    `;
+    const result = await updateQuery;
 
     if (result.rows.length === 0) {
       return NextResponse.json(
