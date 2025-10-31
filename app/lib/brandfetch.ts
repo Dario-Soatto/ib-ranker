@@ -26,5 +26,5 @@ function extractDomain(url: string): string {
     const domain = extractDomain(websiteUrl);
     
     // Use the CDN endpoint (not API endpoint)
-    return `https://cdn.brandfetch.io/${domain}?c=${clientId}&type=icon&fallback=lettermark`;
-  }
+    return `https://cdn.brandfetch.io/${domain}?c=${clientId}&type=icon`;
+    }
