@@ -1,4 +1,4 @@
-import { Fund } from '@/app/lib/types';
+import { SanitizedFund } from '@/app/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink } from 'lucide-react';
@@ -7,11 +7,11 @@ import { getConfig } from '@/app/lib/config';
 
 
 interface FundCardProps {
-  fund: Fund;
+  fund: SanitizedFund;
   onClick: () => void;
-  isClickable?: boolean;
-  showGlow?: boolean;
-  showElo?: boolean;
+  isWinner?: boolean;
+  isLoser?: boolean;
+  disabled?: boolean;
   voteData?: {
     oldElo: number;
     newElo: number;
@@ -24,9 +24,9 @@ interface FundCardProps {
 export default function FundCard({ 
   fund, 
   onClick, 
-  isClickable = true,
-  showGlow = false,
-  showElo = true,
+  isWinner = false,
+  isLoser = false,
+  disabled = false,
   voteData = null
 }: FundCardProps) {
   const config = getConfig();
@@ -56,12 +56,12 @@ export default function FundCard({
 
   return (
     <Card
-      onClick={isClickable ? onClick : undefined}
+      onClick={!disabled ? onClick : undefined}
       className={`
         w-full max-w-md
         transition-all duration-200
-        ${isClickable ? 'hover:shadow-lg hover:border-slate-300 cursor-pointer' : 'opacity-60 cursor-not-allowed'}
-        ${showGlow ? 'ring-2 ring-slate-900 shadow-xl border-slate-900' : 'border-gray-200'}
+        ${!disabled ? 'hover:shadow-lg hover:border-slate-300 cursor-pointer' : 'opacity-60 cursor-not-allowed'}
+        ${isWinner ? 'ring-2 ring-slate-900 shadow-xl border-slate-900' : 'border-gray-200'}
       `}
     >
       <CardHeader className="text-center pb-4 space-y-4">
@@ -97,7 +97,7 @@ export default function FundCard({
 
       <CardContent className="text-center space-y-3">
         {/* ELO Score and Ranking */}
-        {showElo ? (
+        {voteData || isWinner || isLoser ? (
           voteData ? (
             // After voting - show old and new
             <div className="py-2 space-y-3">

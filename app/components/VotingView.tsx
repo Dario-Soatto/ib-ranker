@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Fund } from '@/app/lib/types';
+import { SanitizedFund } from '@/app/lib/types';
 import FundCard from './FundCard';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -11,14 +11,13 @@ import { getConfig } from '@/app/lib/config';
 const config = getConfig();
 
 export default function VotingView() {
-  const [allFunds, setAllFunds] = useState<Fund[]>([]);
-  const [filteredFunds, setFilteredFunds] = useState<Fund[]>([]);
   const [selectedStage, setSelectedStage] = useState<string | null>(null);
-  const [currentPair, setCurrentPair] = useState<[Fund, Fund] | null>(null);
+  const [currentPair, setCurrentPair] = useState<[SanitizedFund, SanitizedFund] | null>(null);
+  const [currentToken, setCurrentToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isVoting, setIsVoting] = useState(false);
   const [hasVoted, setHasVoted] = useState(false);
-  const [selectedWinnerId, setSelectedWinnerId] = useState<number | null>(null);
+  const [selectedWinnerIndex, setSelectedWinnerIndex] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [voteResults, setVoteResults] = useState<{
     winner: {
@@ -36,21 +35,17 @@ export default function VotingView() {
     total: number;
   } | null>(null);
 
+  // Initial load
   useEffect(() => {
-    fetchFunds();
+    fetchNewPair();
   }, []);
 
-  // Update filtered funds when stage filter changes
+  // Fetch new pair when stage filter changes
   useEffect(() => {
-    if (selectedStage) {
-      const filtered = allFunds.filter(f => f.stage === selectedStage);
-      setFilteredFunds(filtered);
-      setCurrentPair(getRandomPair(filtered));
-    } else {
-      setFilteredFunds(allFunds);
-      setCurrentPair(getRandomPair(allFunds));
+    if (!isLoading) {
+      fetchNewPair();
     }
-  }, [selectedStage, allFunds]);
+  }, [selectedStage]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -61,14 +56,14 @@ export default function VotingView() {
         case 'ArrowLeft':
           if (!hasVoted) {
             e.preventDefault();
-            handleVote(currentPair[0].id, currentPair[1].id);
+            handleVote(0);
           }
           break;
         
         case 'ArrowRight':
           if (!hasVoted) {
             e.preventDefault();
-            handleVote(currentPair[1].id, currentPair[0].id);
+            handleVote(1);
           }
           break;
         
@@ -87,40 +82,35 @@ export default function VotingView() {
     };
   }, [isVoting, hasVoted, currentPair]);
 
-  const fetchFunds = async () => {
+  const fetchNewPair = async () => {
     try {
-      const response = await fetch('/api/funds');
+      const response = await fetch('/api/get-pair', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage: selectedStage }),
+      });
       const data = await response.json();
-      setAllFunds(data);
-      setFilteredFunds(data);
-      
-      if (!currentPair) {
-        setCurrentPair(getRandomPair(data));
-      }
-      
+      setCurrentPair(data.pair);
+      setCurrentToken(data.token);
       setIsLoading(false);
     } catch (error) {
-      console.error('Failed to fetch funds:', error);
+      console.error('Failed to fetch pair:', error);
+      setIsLoading(false);
     }
   };
 
-  const getRandomPair = (fundsList: Fund[]): [Fund, Fund] | null => {
-    if (fundsList.length < 2) return null;
+  const handleVote = async (winnerIndex: number) => {
+    if (!currentToken) return;
     
-    const shuffled = [...fundsList].sort(() => Math.random() - 0.5);
-    return [shuffled[0], shuffled[1]];
-  };
-
-  const handleVote = async (winnerId: number, loserId: number) => {
     setIsVoting(true);
-    setSelectedWinnerId(winnerId);
-    setErrorMessage(null); // Clear any previous errors
-  
+    setSelectedWinnerIndex(winnerIndex);
+    setErrorMessage(null);
+    
     try {
       const response = await fetch('/api/vote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ winnerId, loserId }),
+        body: JSON.stringify({ token: currentToken, winnerIndex }),
       });
   
       if (response.ok) {
@@ -128,19 +118,15 @@ export default function VotingView() {
         setVoteResults(data);
         
         if (currentPair) {
-          const updatedPair: [Fund, Fund] = [
+          const updatedPair: [SanitizedFund, SanitizedFund] = [
             {
               ...currentPair[0],
-              elo_score: currentPair[0].id === winnerId 
-                ? data.winner.newElo 
-                : data.loser.newElo,
+              elo_score: winnerIndex === 0 ? data.winner.newElo : data.loser.newElo,
               match_count: currentPair[0].match_count + 1,
             },
             {
               ...currentPair[1],
-              elo_score: currentPair[1].id === winnerId 
-                ? data.winner.newElo 
-                : data.loser.newElo,
+              elo_score: winnerIndex === 1 ? data.winner.newElo : data.loser.newElo,
               match_count: currentPair[1].match_count + 1,
             },
           ];
@@ -149,7 +135,6 @@ export default function VotingView() {
           setHasVoted(true);
         }
       } else {
-        // Handle error responses (including rate limit)
         const errorData = await response.json();
         setErrorMessage(errorData.error || 'Failed to submit vote. Please try again.');
       }
@@ -161,36 +146,18 @@ export default function VotingView() {
     }
   };
 
-  
   const handleNext = () => {
     setHasVoted(false);
-    setSelectedWinnerId(null);
+    setSelectedWinnerIndex(null);
     setVoteResults(null);
-    setErrorMessage(null); // Clear error when moving to next matchup
-    setCurrentPair(getRandomPair(filteredFunds));
+    setErrorMessage(null);
+    fetchNewPair();
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <Loader2 className="w-8 h-8 animate-spin text-slate-600" />
-      </div>
-    );
-  }
-
-  if (filteredFunds.length < 2) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center space-y-4">
-          <p className="text-xl text-muted-foreground">
-            Not enough {selectedStage ? config.stages.find(s => s.value === selectedStage)?.label : ''} funds to compare
-          </p>
-          {selectedStage && (
-            <Button onClick={() => setSelectedStage(null)}>
-              Clear Filter
-            </Button>
-          )}
-        </div>
       </div>
     );
   }
@@ -204,55 +171,55 @@ export default function VotingView() {
   }
 
   return (
-<div className="min-h-screen bg-gray-50 py-12 px-4">
-<div className="max-w-7xl mx-auto">
-  {/* Leaderboard Button - Top Right */}
-  <div className="absolute top-4 right-4">
-    <Button asChild variant="outline" size="sm" className="gap-2">
-      <Link href="/leaderboard">
-        <Trophy className="w-4 h-4" />
-        View Leaderboard
-      </Link>
-    </Button>
-  </div>
+    <div className="min-h-screen bg-gray-50 py-12 px-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Leaderboard Button - Top Right */}
+        <div className="absolute top-4 right-4">
+          <Button asChild variant="outline" size="sm" className="gap-2">
+            <Link href="/leaderboard">
+              <Trophy className="w-4 h-4" />
+              View Leaderboard
+            </Link>
+          </Button>
+        </div>
 
-  {/* Header */}
-  <div className="text-center mb-12 space-y-4">
-    <h1 className="text-5xl font-bold text-slate-900">
-      {config.title}
-    </h1>
-    <p className="text-lg text-slate-600">
-      {hasVoted 
-        ? 'Rankings updated! Click Next for another matchup.' 
-        : `Which ${config.entityName} is better? Click to vote.`}
-    </p>
-    
-    {/* Keyboard shortcut hints */}
-    <div className="text-sm text-slate-500">
-      Use ← → arrow keys to vote, Space/Enter to {hasVoted ? 'continue' : 'skip'}
-    </div>
+        {/* Header */}
+        <div className="text-center mb-12 space-y-4">
+          <h1 className="text-5xl font-bold text-slate-900">
+            {config.title}
+          </h1>
+          <p className="text-lg text-slate-600">
+            {hasVoted 
+              ? 'Rankings updated! Click Next for another matchup.' 
+              : `Which ${config.entityName} is better? Click to vote.`}
+          </p>
+          
+          {/* Keyboard shortcut hints */}
+          <div className="text-sm text-slate-500">
+            Use ← → arrow keys to vote, Space/Enter to {hasVoted ? 'continue' : 'skip'}
+          </div>
 
-    {/* Stage Filter */}
-    <div className="flex flex-wrap gap-2 justify-center pt-2">
-      <Button 
-        onClick={() => setSelectedStage(null)}
-        variant={!selectedStage ? "default" : "outline"}
-        size="sm"
-      >
-        All
-      </Button>
-      {config.stages.map((stage) => (
-      <Button
-        key={stage.value}
-        onClick={() => setSelectedStage(stage.value)}
-        variant={selectedStage === stage.value ? "default" : "outline"}
-        size="sm"
-      >
-        {stage.label}
-      </Button>
-    ))}
-    </div>
-  </div>
+          {/* Stage Filter */}
+          <div className="flex flex-wrap gap-2 justify-center pt-2">
+            <Button 
+              onClick={() => setSelectedStage(null)}
+              variant={!selectedStage ? "default" : "outline"}
+              size="sm"
+            >
+              All
+            </Button>
+            {config.stages.map((stage) => (
+              <Button
+                key={stage.value}
+                onClick={() => setSelectedStage(stage.value)}
+                variant={selectedStage === stage.value ? "default" : "outline"}
+                size="sm"
+              >
+                {stage.label}
+              </Button>
+            ))}
+          </div>
+        </div>
 
         {/* Two Cards Side by Side */}
         <div className="flex flex-col lg:flex-row gap-8 justify-center items-center mb-8">
@@ -260,16 +227,16 @@ export default function VotingView() {
           <div className={`
             w-full max-w-md
             transition-all duration-300
-            ${hasVoted && selectedWinnerId === currentPair[0].id ? 'scale-105' : ''}
+            ${hasVoted && selectedWinnerIndex === 0 ? 'scale-105' : ''}
           `}>
             <FundCard
               fund={currentPair[0]}
-              onClick={() => handleVote(currentPair[0].id, currentPair[1].id)}
-              isClickable={!isVoting && !hasVoted}
-              showGlow={hasVoted && selectedWinnerId === currentPair[0].id}
-              showElo={hasVoted}
+              onClick={() => handleVote(0)}
+              isWinner={hasVoted && selectedWinnerIndex === 0}
+              isLoser={hasVoted && selectedWinnerIndex === 1}
+              disabled={isVoting || hasVoted}
               voteData={hasVoted && voteResults ? {
-                ...(currentPair[0].id === selectedWinnerId ? voteResults.winner : voteResults.loser),
+                ...(selectedWinnerIndex === 0 ? voteResults.winner : voteResults.loser),
                 total: voteResults.total
               } : null}
             />
@@ -286,16 +253,16 @@ export default function VotingView() {
           <div className={`
             w-full max-w-md
             transition-all duration-300
-            ${hasVoted && selectedWinnerId === currentPair[1].id ? 'scale-105' : ''}
+            ${hasVoted && selectedWinnerIndex === 1 ? 'scale-105' : ''}
           `}>
             <FundCard
               fund={currentPair[1]}
-              onClick={() => handleVote(currentPair[1].id, currentPair[0].id)}
-              isClickable={!isVoting && !hasVoted}
-              showGlow={hasVoted && selectedWinnerId === currentPair[1].id}
-              showElo={hasVoted}
+              onClick={() => handleVote(1)}
+              isWinner={hasVoted && selectedWinnerIndex === 1}
+              isLoser={hasVoted && selectedWinnerIndex === 0}
+              disabled={isVoting || hasVoted}
               voteData={hasVoted && voteResults ? {
-                ...(currentPair[1].id === selectedWinnerId ? voteResults.winner : voteResults.loser),
+                ...(selectedWinnerIndex === 1 ? voteResults.winner : voteResults.loser),
                 total: voteResults.total
               } : null}
             />

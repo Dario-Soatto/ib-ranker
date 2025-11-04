@@ -1,6 +1,8 @@
 import { sql } from '@vercel/postgres';
 import { NextResponse } from 'next/server';
 import { calculateElo } from '@/app/lib/elo';
+import { activeSessions } from '../get-pair/route';
+
 
 // Track votes per IP with timestamps for each winner
 const voteTracker = new Map<string, { 
@@ -80,35 +82,31 @@ function recordVote(key: string, winnerId: number) {
 
 export async function POST(request: Request) {
   try {
-    const { winnerId, loserId } = await request.json();
+    const { token, winnerIndex } = await request.json();
 
-    // Basic validation
-    if (!winnerId || !loserId) {
+    // Validate token
+    const session = activeSessions.get(token);
+    if (!session) {
       return NextResponse.json(
-        { error: 'Winner and loser IDs are required' },
-        { status: 400 }
+        { error: 'Invalid or expired voting session' },
+        { status: 401 }
       );
     }
 
-    // Prevent voting for the same fund
-    if (winnerId === loserId) {
-      return NextResponse.json(
-        { error: 'Cannot vote for the same fund twice' },
-        { status: 400 }
-      );
-    }
+    // Get fund IDs from session
+    const winnerId = winnerIndex === 0 ? session.fund1Id : session.fund2Id;
+    const loserId = winnerIndex === 0 ? session.fund2Id : session.fund1Id;
 
-    // Rate limiting (checks winner-specific limits)
+    // Invalidate token (one-time use)
+    activeSessions.delete(token);
+
+    // Rate limiting using fund IDs (not exposed to client)
     const rateLimitKey = getRateLimitKey(request);
     const { allowed, reason } = checkRateLimit(rateLimitKey, winnerId);
     
     if (!allowed) {
-      return NextResponse.json(
-        { error: reason },
-        { status: 429 }
-      );
+      return NextResponse.json({ error: reason }, { status: 429 });
     }
-
     // Get current ratings
     const winner = await sql`SELECT elo_score, match_count FROM funds WHERE id = ${winnerId}`;
     const loser = await sql`SELECT elo_score, match_count FROM funds WHERE id = ${loserId}`;

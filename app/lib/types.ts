@@ -15,3 +15,12 @@ export interface Fund {
   match_count: number;
   created_at: Date;
 }
+
+export interface SanitizedFund {
+  name: string;
+  website: string;
+  stage: string;
+  logo_url: string | null;
+  elo_score: number;
+  match_count: number;
+}
