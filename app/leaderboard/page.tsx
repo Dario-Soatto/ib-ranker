@@ -1,9 +1,9 @@
 import { sql } from '@vercel/postgres';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Trophy, Medal, Award } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { ArrowLeft, Trophy, Medal, Award, LayoutGrid } from 'lucide-react';
 import { getConfig } from '@/app/lib/config';
 
 export const dynamic = 'force-dynamic';
@@ -71,8 +71,16 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
             </Link>
           </Button>
         </div>
-        
 
+        {/* More Rankers Button - Top Right */}
+        <div className="absolute top-4 right-4">
+          <Button asChild variant="outline" size="sm" className="gap-2">
+            <a href="https://www.corporateranker.com" target="_blank" rel="noopener noreferrer">
+              <LayoutGrid className="w-4 h-4" />
+              More Rankers
+            </a>
+          </Button>
+        </div>
 
         {/* Header */}
         <div className="text-center mb-12 space-y-4">
@@ -84,12 +92,10 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
               ? `${getStageLabel(selectedStage)} Rankings` 
               : 'Rankings based on community votes'}
           </p>
-          
-          
         </div>
 
         {/* Stage Filter */}
-        <div className="mb-6 flex flex-wrap gap-2 justify-center">
+        <div className="mb-8 flex flex-wrap gap-2 justify-center">
           <Button 
             asChild
             variant={!selectedStage ? "default" : "outline"}
@@ -112,23 +118,20 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
         </div>
 
         {/* Leaderboard */}
-        <Card>
-          <CardContent className="p-6">
-            {funds.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">
-                No {selectedStage ? getStageLabel(selectedStage) : ''} funds found
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {funds.map((fund, index) => (
-                  <div
-                    key={fund.id}
-                    className="flex items-center gap-4 p-4 rounded-lg border border-gray-200 bg-white"
-                  >
+        <div>
+          {funds.length === 0 ? (
+            <div className="text-center py-12 text-slate-500">
+              No {selectedStage ? getStageLabel(selectedStage) : ''} funds found
+            </div>
+          ) : (
+            <div>
+              {funds.map((fund, index) => (
+                <div key={fund.id}>
+                  <div className={`flex items-center gap-4 py-5 px-4 hover:bg-slate-100/50 transition-colors ${index < funds.length - 1 ? 'border-b border-gray-300' : ''}`}>
                     {/* Rank */}
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-50 border border-slate-200 flex-shrink-0">
+                    <div className="flex items-center justify-center w-10 flex-shrink-0">
                       {getRankIcon(index) || (
-                        <span className="font-semibold text-slate-700">{index + 1}</span>
+                        <span className="font-semibold text-slate-700 text-lg">{index + 1}</span>
                       )}
                     </div>
 
@@ -137,10 +140,10 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                       <img
                         src={fund.logo_url}
                         alt={`${fund.name} logo`}
-                        className="w-10 h-10 object-contain border border-slate-200 flex-shrink-0 rounded"
+                        className="w-10 h-10 object-contain flex-shrink-0"
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 flex-shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
                         <span className="font-semibold text-slate-700 text-sm">
                           {fund.name.charAt(0)}
                         </span>
@@ -153,7 +156,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                         href={fund.website}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-semibold text-slate-900 hover:text-blue-600 truncate block transition-colors"
+                        className="font-semibold text-slate-900 hover:text-blue-600 truncate block transition-colors text-lg"
                       >
                         {fund.name}
                       </a>
@@ -168,18 +171,18 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                     </div>
 
                     {/* ELO Score */}
-                    <div className="text-right flex-shrink-0">
+                    <div className="text-right flex-shrink-0 w-20">
                       <div className="text-2xl font-bold text-slate-900">
                         {fund.elo_score}
                       </div>
                       <div className="text-xs text-slate-500">ELO</div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Stats Footer */}
         <div className="mt-8 text-center text-slate-600 space-y-1">

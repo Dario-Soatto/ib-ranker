@@ -5,7 +5,7 @@ import { SanitizedFund } from '@/app/lib/types';
 import FundCard from './FundCard';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Trophy, ArrowRight, Loader2, SkipForward } from 'lucide-react';
+import { Trophy, ArrowRight, Loader2, SkipForward, LayoutGrid } from 'lucide-react';
 import { getConfig } from '@/app/lib/config';
 
 const config = getConfig();
@@ -171,8 +171,18 @@ export default function VotingView() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen bg-gray-50 py-4 px-4 relative">
       <div className="max-w-7xl mx-auto">
+        {/* More Rankers Button - Top Left */}
+        <div className="absolute top-4 left-4">
+          <Button asChild variant="outline" size="sm" className="gap-2">
+            <a href="https://www.corporateranker.com" target="_blank" rel="noopener noreferrer">
+              <LayoutGrid className="w-4 h-4" />
+              More Rankers
+            </a>
+          </Button>
+        </div>
+
         {/* Leaderboard Button - Top Right */}
         <div className="absolute top-4 right-4">
           <Button asChild variant="outline" size="sm" className="gap-2">
@@ -244,7 +254,7 @@ export default function VotingView() {
 
           {/* VS Divider */}
           <div className="flex items-center justify-center lg:mx-4">
-            <div className="bg-white px-6 py-3 rounded-full font-semibold text-slate-400 border border-gray-200">
+            <div className="text-2xl font-bold text-slate-400">
               VS
             </div>
           </div>
